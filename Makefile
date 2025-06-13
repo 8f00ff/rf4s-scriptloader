@@ -4,10 +4,15 @@ NAME        := SDL2
 TARGET_DIR  := out
 TARGET_DLL  := $(TARGET_DIR)/$(NAME).dll
 SRC         := src/dllmain.cpp
-INSTALL_DIR := $(HOME)/.local/share/Steam/steamapps/common/Rune Factory 4 Special
+INSTALL_DIR := $(HOME)/.local/share/Steam/steamapps/common/Rune\ Factory\ 4\ Special
+
+MINHOOK_DIR := extern/minhook
+MINHOOK_SRC := \
+  $(wildcard $(MINHOOK_DIR)/src/*.c) \
+  $(wildcard $(MINHOOK_DIR)/src/hde/*.c)
 
 CXX         := x86_64-w64-mingw32-g++
-CXXFLAGS    := -Wall -Wextra -O2 -static -mwindows
+CXXFLAGS    := -Wall -Wextra -O2 -static -I$(MINHOOK_DIR)/include -mwindows
 LDFLAGS     := -shared
 
 CP          := cp -f
@@ -27,41 +32,36 @@ default: all
 
 all: build
 
-gendef: $(NAME).def
-
 build: $(TARGET_DLL)
-
-check-real-dll:
-	@if [ -f "$(DLL_REAL)" ]; then \
-	  echo "$(NAME) already renamed."; \
-	elif [ -f "$(DLL_ORIG)" ]; then \
-	  CUR_HASH=`md5sum "$(DLL_ORIG)" | cut -d' ' -f1`; \
-	  if [ "$$CUR_HASH" = "$(DLL_HASH)" ]; then \
-	    echo "Renaming original $(NAME).dll -> $(NAME)_real.dll"; \
-	    mv "$(DLL_ORIG)" "$(DLL_REAL)"; \
-	  else \
-	    echo "$(NAME).dll hash mismatch, skipping rename."; \
-	  fi \
-	else \
-	  echo "$(NAME).dll not found."; \
-	fi
-
-$(TARGET_DIR)/:
-	$(MKDIR) $@
-
-$(TARGET_DLL): $(SRC) $(TARGET_DIR)/$(NAME).def | $(TARGET_DIR)/
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -Wl,--output-def,$(TARGET_DIR)/$(NAME).def -o $@ $^
-
-install: $(TARGET_DLL) | check-real-dll
-	$(CP) $< "$(DLL_ORIG)"
 
 clean:
 	$(RM) -r $(TARGET_DIR)
 
-$(TARGET_DIR)/$(NAME).def: $(TARGET_DIR)/
+gendef: $(NAME).def
+
+install: $(TARGET_DLL) $(DLL_REAL)
+	$(CP) $< $(DLL_ORIG)
+
+$(TARGET_DIR):
+	$(MKDIR) $@
+
+$(TARGET_DLL): $(SRC) $(MINHOOK_SRC) | $(TARGET_DIR)/$(NAME)_real.def $(TARGET_DIR)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(TARGET_DIR)/$(NAME)_real.def $^ -o $@
+
+$(TARGET_DIR)/$(NAME)_real.def: $(TARGET_DIR)
 	@printf "EXPORTS\n" > $@
 	@$(WGET) -qO - https://raw.githubusercontent.com/libsdl-org/SDL/refs/tags/release-$(DLL_VERSION)/src/dynapi/SDL_dynapi_procs.h | \
 		grep -oP 'SDL_DYNAPI_PROC\([^,]+,\s*\K[^,]+' | \
 		while read fn; do \
 			printf "    %s = SDL2_real.%s\n" "$$fn" "$$fn"; \
 		done >> $@
+
+$(DLL_REAL):
+	@CUR_HASH=`md5sum $(DLL_ORIG) | cut -d' ' -f1`; \
+	if [ "$$CUR_HASH" = "$(DLL_HASH)" ]; then \
+	  echo "Renaming $(DLL_ORIG) -> $@"; \
+	  mv $(DLL_ORIG) "$@"; \
+	else \
+	  echo "Hash mismatch: refusing to rename $(DLL_ORIG)"; \
+	  exit 1; \
+	fi
