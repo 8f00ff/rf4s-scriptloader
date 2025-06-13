@@ -7,6 +7,12 @@
 **rf4s-scriptloader** is a runtime modding framework for *Rune Factory 4 Special* (PC).  
 It sneaks in through `SDL2.dll`, hooks into the game at launch, and opens the door for mods to do far more than asset swaps and text edits — without touching the original binaries.
 
+## Experimental Branch
+
+> **Note:** This branch is an experimental reimplementation of the ["Everyone is Bi"](https://www.nexusmods.com/runefactory4special/mods/98) mod for Rune Factory 4 Special.
+It is a standalone mod and does not include any modloader or script loader features.
+For the original xdelta patch version and future updates, see the [Nexus Mods page](https://www.nexusmods.com/runefactory4special/mods/98).
+
 The goal? A stable, flexible foundation for real, systemic modding. Including (but absolutely not limited to):
 
 - Extending the dialogue system with proper branching, conditionals, and custom placeholders (like pronouns, titles, or whatever else the script needs)
@@ -19,10 +25,9 @@ This is about giving RF4S a future-proof modding backbone — one that’s inclu
 
 ## Usage
 
-**Right now, the loader just verifies injection and sets up the groundwork for future hooks.
-No visible gameplay changes yet — this is the scaffold.**
+**This branch contains a standalone mod. It does not require or provide any modloader or script loader functionality.**
 
-Once mod support is implemented, this section will cover runtime configuration, mod toggles, and integration details.
+The changes will be automatically applied to the game if the mod is installed correctly.
 
 ## Installation
 
